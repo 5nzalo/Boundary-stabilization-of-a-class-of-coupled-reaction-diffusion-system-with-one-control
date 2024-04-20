@@ -1,1 +1,2 @@
 # Boundary-stabilization-of-a-class-of-coupled-reaction-diffusion-system-with-one-control
+This repository contains simulation code used for the numerical illustration of the article “ Boundary stabilization of a class of coupled reaction-diffusion system with one control” by Gonzalo Arias and Hugo Parada. We refer to the article for details of the system being simulated here. This code is distributed under the GPL v3 licence.
