@@ -25,7 +25,7 @@ get_ipython().run_line_magic('matplotlib', 'notebook')
 
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import cm
-from matplotlib.ticker import LinearLocator, FormatStrFormatter
+from matplotlib.ticker import LinearLocator, FormatStrFormatter, FuncFormatter
 
 from scipy.interpolate import RectBivariateSpline
 from scipy.integrate import simpson
@@ -53,6 +53,14 @@ CASE = 1
 
 
 # In[ ]:
+
+#For a better showing in scientific notation used in the unstable case
+def scientific_formatter(x, pos):
+    formatted = f"{x:.1e}"
+    base, exp = formatted.split('e')  # Split the base and exponent
+    # Erase zeros to the left of the exponent
+    exp = str(int(exp))  # Change the exponent to an integer, then uses a chain to erase the zeros
+    return f"{base}e{exp}"
 
 
 def backstepping(x,Nx,nu):
@@ -496,84 +504,155 @@ else:
 # In[ ]:
 
 
-i = 1
+# Selects the epsilon from the list epsilons[]
+i = 3
 
+# Create two 3D subplots with specified size
 fig, ax = plt.subplots(1, 2, subplot_kw={"projection": "3d"}, figsize = (9, 9))
+
+# Set the positions of the subplots within the figure
 ax[0].set_position([0, 0.5, 0.45, 0.45])
 ax[1].set_position([0.5, 0.5, 0.45, 0.45])
+
+# Title for the entire figure, using the epsilon value
 fig.suptitle(r"Solution of the PDE with $\varepsilon = " + "{:3g}$".format(epsilons[i]))
-t, x, u, v = res_full[i]
+
+# Extract the relevant data for the chosen epsilon value
+t, x, u, v, _, _ = res_full[i]
+
+# Create mesh grids for time (t) and space (x) variables
 T1, X = np.meshgrid(t, x)
+
+# Set Z-axis labels for both subplots
 ax[0].set_zlabel("$u(\cdot, \cdot)$")
 ax[1].set_zlabel("$v(\cdot, \cdot)$")
+
+# Apply a scientific formatter to the Z-axis labels
+ax[0].zaxis.set_major_formatter(FuncFormatter(scientific_formatter))
+ax[1].zaxis.set_major_formatter(FuncFormatter(scientific_formatter))
+
+# Set the X and Y axis labels for both subplots
 for j in range(2):
     ax[j].set_xlabel("$t$")
     ax[j].set_ylabel("$x$")
+
+# Plot the surface for 'u' in the first subplot
 ax[0].plot_surface(T1, X, u[:, :, 0].T, rcount = 100, ccount = 100, cmap = "plasma", antialiased=False, linewidth = 0)
+
+# Plot the surface for 'v' in the second subplot
 ax[1].plot_surface(T1, X, v[:, :, 0].T, rcount = 100, ccount = 100, cmap = "plasma", antialiased=False, linewidth = 0)
 
-if CASE==1:
-  fig, ax = plt.subplots(2, 1, subplot_kw={"projection": "3d"}, figsize = (9, 9))
-  ax[0].set_position([0, 0.5, 0.45, 0.45])
-  ax[1].set_position([0.5, 0.5, 0.45, 0.45])
-  fig.suptitle(r"Solution of the controlled PDE with $\varepsilon = " + "{:3g}$".format(epsilons[i]))
-  t, x, u, v, NX,NT = res_full_controlled[i]
-  T1, X = np.meshgrid(t, x)
-  ax[0].set_zlabel("$u(\cdot, \cdot)$")
-  ax[1].set_zlabel("$v(\cdot, \cdot)$")
-  for j in range(2):
-      ax[j].set_xlabel("$t$")
-      ax[j].set_ylabel("$x$")
-  ax[0].plot_surface(T1, X, u[:, :, 0].T, rcount = 1000, ccount = 1000, cmap = "plasma", antialiased=False, linewidth = 0)
-  ax[1].plot_surface(T1, X, v[:, :, 0].T, rcount = 1700, ccount = 1700, cmap = "plasma", antialiased=False, linewidth = 0)
-  #ticks = np.arange(0, 10, 2)
-  #ax[0, 0].set_xticks(ticks, ["${:1g}".format(t) + r"\varepsilon$" if t != 0 else "$0$" for t in ticks])
-  #ax[1, 0].set_xticks(ticks, ["${:1g}".format(t) + r"\varepsilon$" if t != 0 else "$0$" for t in ticks])
-  # rcount and ccount should be increased to get a better quality of the graphs. In the article, we took rcount = ccount = 1000 for the plot of y_fast and rcount = ccount = 5000 for the plot of y. With these values, the graph may take a long time to be shown.
+# Save the figure as an image (simul_uv.png) with tight bounding box and added padding to avoid cutting off labels
+fig.savefig("simul_uv.png", bbox_inches="tight", pad_inches=0.2)
 
-else:
-    print("your system is stable, enjoy")
+# Check if we are in the unstable case, then create another set of subplots for the controlled PDE solution
+if CASE == 1:
+    # Create a new figure with two 3D subplots for controlled case
+    fig, ax = plt.subplots(2, 1, subplot_kw={"projection": "3d"}, figsize = (9, 9))
     
-## COMPUTING ERROR OF APPROXIMATION
+    # Set the positions of the subplots within the figure
+    ax[0].set_position([0, 0.5, 0.45, 0.45])
+    ax[1].set_position([0.5, 0.5, 0.45, 0.45])
 
+    # Title for the entire figure for the controlled case
+    fig.suptitle(r"Solution of the controlled PDE with $\varepsilon = " + "{:3g}$".format(epsilons[i]))
+
+    # Extract the relevant data for the controlled case
+    t, x, u, v, NX, NT = res_full_controlled[i]
+
+    # Create mesh grids for time (t) and space (x) variables for controlled case
+    T1, X = np.meshgrid(t, x)
+
+    # Set Z-axis labels for both subplots in the controlled case
+    ax[0].set_zlabel("$u(\cdot, \cdot)$")
+    ax[1].set_zlabel("$v(\cdot, \cdot)$")
+
+    # Set the X and Y axis labels for both subplots in the controlled case
+    for j in range(2):
+        ax[j].set_xlabel("$t$")
+        ax[j].set_ylabel("$x$")
+
+    # Plot the surface for 'u' in the first subplot for the controlled case
+    ax[0].plot_surface(T1, X, u[:, :, 0].T, rcount = 1000, ccount = 1000, cmap = "plasma", antialiased=False, linewidth = 0)
+
+    # Plot the surface for 'v' in the second subplot for the controlled case
+    ax[1].plot_surface(T1, X, v[:, :, 0].T, rcount = 1700, ccount = 1700, cmap = "plasma", antialiased=False, linewidth = 0)
+
+    # Commented out lines for setting custom ticks on X-axis (can be customized if needed)
+    # ticks = np.arange(0, 10, 2)
+    # ax[0, 0].set_xticks(ticks, ["${:1g}".format(t) + r"\varepsilon$" if t != 0 else "$0$" for t in ticks])
+    # ax[1, 0].set_xticks(ticks, ["${:1g}".format(t) + r"\varepsilon$" if t != 0 else "$0$" for t in ticks])
+
+    # Note: Increasing rcount and ccount improves the quality of the graph but can take more time to compute
+else:
+    # Print a message when the system is stable and we do not have to control
+    print("your system is stable, enjoy")
+
+# --- COMPUTING ERROR OF APPROXIMATION ---
+
+# Define different line styles for plotting errors
 linestyles = [(0, (5, 1)), (0, (4, 1, 1, 1)), (0, (3, 1, 1, 1, 1, 1)), (0, (2, 1, 1, 1, 1, 1, 1, 1)), (0, (1, 1))]
 
-if CASE==1:
+# Check if we are in an unstable regime, then plot the error for the controlled system
+if CASE == 1:
+    # Create a new figure for plotting the error of Tikhonov approximation
     fig, ax = plt.subplots(figsize = (5, 5))
     ax.grid(True)
     ax.set_axisbelow(True)
     ax.set_xlabel("Time $t$")
-    ax.set_ylabel("$E(t)$")
+    ax.set_ylabel("Error $E(t)$")
     ax.set_title("Error of Tikhonov approximation")
+    fig.tight_layout()
+
+    # Loop through the epsilon values and plot the error for each case
     for i in range(epsilons.size):
-        t, x, u, v, NX,NT=res_full_controlled[i]
-        u_new=h_c(t,x)
-        v_new=g_c(t,x)
-        Error=error(u[:,:,0]-u_new,v[:,:,0]-v_new,T,NT,NX)
-        Error=Error[t <= 0.04]
-        t_short = t[t <= 0.04]
+        t, x, u, v, NX, NT = res_full_controlled[i]
+
+        # Compute the error using the interpolations of u and v (h_c and g_c, respectively)
+        u_new = h_c(t, x)
+        v_new = g_c(t, x)
+        Error = error(u[:,:,0] - u_new, v[:,:,0] - v_new, T, NT, NX)
+        
+        # Only consider the error for times t <= 0.5
+        Error = Error[t <= 0.5]
+        t_short = t[t <= 0.5]
+
+        # Set the x-axis limits and plot the error
+        ax.set_xlim(0, 0.04)
         ax.plot(t_short, Error, linestyle = linestyles[i], label = r"$\varepsilon = " + "{:.3g}".format(epsilons[i]) + "$")
+
+    # Display the legend and save the figure
     ax.legend()
+    fig.savefig("error_graphic_controlled.png", bbox_inches="tight")
+
+# If the system is stable, plot the error.
 else:
+    # Create a new figure for plotting the error of Tikhonov approximation in the un-controlled case
     fig, ax = plt.subplots(figsize = (5, 5))
     ax.grid(True)
     ax.set_axisbelow(True)
     ax.set_xlabel("Time $t$")
-    ax.set_ylabel("$E(t)$")
+    ax.set_ylabel("Error $E(t)$")
     ax.set_title("Error of Tikhonov approximation")
+    fig.tight_layout()
+
+    # Loop through the epsilon values and plot the error for each case
     for i in range(epsilons.size):
-        t, x, u, v, NX,NT=res_full[i]
-        u_new=h(t,x)
-        v_new=g(t,x)
-        Error=error(u[:,:,0]-u_new,v[:,:,0]-v_new,T,NT,NX)
-        Error=Error[t <= 0.04]
+        t, x, u, v, NX, NT = res_full[i]
+
+        # Compute the error using the interpolations of u and v (h and g, respectively)
+        u_new = h(t, x)
+        v_new = g(t, x)
+        Error = error(u[:,:,0] - u_new, v[:,:,0] - v_new, T, NT, NX)
+        
+        # Only consider the error for times t <= 0.04
+        Error = Error[t <= 0.04]
         t_short = t[t <= 0.04]
+
+        # Set the x-axis limits and plot the error
+        ax.set_xlim(0, 0.04)
         ax.plot(t_short, Error, linestyle = linestyles[i], label = r"$\varepsilon = " + "{:.3g}".format(epsilons[i]) + "$")
+
+    # Display the legend and save the figure
     ax.legend()
-
-
-# In[ ]:
-
-
-
-
+    fig.savefig("error_graphic.png", bbox_inches="tight")
